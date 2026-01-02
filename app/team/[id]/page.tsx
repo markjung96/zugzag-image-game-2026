@@ -95,7 +95,7 @@ export default function TeamPage() {
         return () => clearInterval(interval);
     }, []);
 
-    const handleSubmit = () => {
+    const handleSubmit = async () => {
         if (!answer.trim() || !currentQuestion) return;
 
         const saved = localStorage.getItem(storageKey);
@@ -119,6 +119,22 @@ export default function TeamPage() {
         });
 
         localStorage.setItem(storageKey, JSON.stringify(answers));
+
+        // 서버에도 저장
+        try {
+            await fetch("/api/team-answers", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    teamId,
+                    questionId: currentQuestion.id,
+                    answer: answer.trim(),
+                }),
+            });
+        } catch (error) {
+            console.error("Failed to save answer to server:", error);
+        }
+
         setSubmitted(true);
     };
 
