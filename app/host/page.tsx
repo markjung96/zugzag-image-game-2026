@@ -45,6 +45,14 @@ interface TeamResult {
     }[];
 }
 
+// 실시간 리더보드 타입
+interface LeaderboardEntry {
+    teamId: string;
+    score: number;
+    firstCorrect: number;
+    secondCorrect: number;
+}
+
 export default function HostPage() {
     const [questions, setQuestions] = useState<Question[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
@@ -53,6 +61,7 @@ export default function HostPage() {
     const [showResults, setShowResults] = useState(false);
     const [teamResults, setTeamResults] = useState<TeamResult[]>([]);
     const [teamSubmissions, setTeamSubmissions] = useState<Record<string, boolean>>({});
+    const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
 
     // 타이머 상태
     const [timerSeconds, setTimerSeconds] = useState(30);
@@ -94,7 +103,29 @@ export default function HostPage() {
         }
     }, [currentIndex, loading, questions.length]);
 
-    // Poll team submissions every 2 seconds
+    // 투표 카운트 계산 함수 (리더보드용)
+    const calculateVoteCountsForQuestion = useCallback((questionAnswers: Answer[]) => {
+        const counts = new Map<string, number>();
+        questionAnswers.forEach((answer) => {
+            counts.set(answer.name, (counts.get(answer.name) || 0) + 1);
+        });
+        const sorted = Array.from(counts.entries())
+            .map(([name, count]) => ({ name, count }))
+            .sort((a, b) => b.count - a.count);
+
+        let currentRank = 1;
+        let prevCount = -1;
+
+        return sorted.map((item, index) => {
+            if (item.count !== prevCount) {
+                currentRank = index + 1;
+            }
+            prevCount = item.count;
+            return { ...item, rank: currentRank };
+        });
+    }, []);
+
+    // Poll team submissions every 2 seconds + 실시간 리더보드 계산
     useEffect(() => {
         if (loading || questions.length === 0 || showResults) return;
 
@@ -114,6 +145,44 @@ export default function HostPage() {
                     );
                 });
                 setTeamSubmissions(submissions);
+
+                // 실시간 리더보드 계산 (현재 질문까지의 점수)
+                const leaderboardMap = new Map<string, LeaderboardEntry>();
+                ["1", "2", "3", "4"].forEach((teamId) => {
+                    leaderboardMap.set(teamId, { teamId, score: 0, firstCorrect: 0, secondCorrect: 0 });
+                });
+
+                // 현재 질문까지의 모든 질문에 대해 점수 계산
+                for (let i = 0; i <= currentIndex; i++) {
+                    const q = questions[i];
+                    if (!q) continue;
+
+                    const voteCounts = calculateVoteCountsForQuestion(q.answers);
+                    const firstPlaceNames = voteCounts.filter((v) => v.rank === 1).map((v) => v.name);
+                    const secondPlaceNames = voteCounts.filter((v) => v.rank === 2).map((v) => v.name);
+
+                    answers
+                        .filter((a) => a.questionId === q.id)
+                        .forEach((ta) => {
+                            const entry = leaderboardMap.get(ta.teamId);
+                            if (entry) {
+                                if (firstPlaceNames.includes(ta.firstPlace)) {
+                                    entry.firstCorrect++;
+                                    entry.score += 2;
+                                }
+                                if (secondPlaceNames.includes(ta.secondPlace)) {
+                                    entry.secondCorrect++;
+                                    entry.score += 1;
+                                }
+                            }
+                        });
+                }
+
+                // 점수 순으로 정렬
+                const sortedLeaderboard = Array.from(leaderboardMap.values()).sort(
+                    (a, b) => b.score - a.score
+                );
+                setLeaderboard(sortedLeaderboard);
             } catch (error) {
                 console.error("Failed to fetch team submissions:", error);
             }
@@ -123,7 +192,7 @@ export default function HostPage() {
         const interval = setInterval(fetchTeamSubmissions, 2000);
 
         return () => clearInterval(interval);
-    }, [currentIndex, loading, questions, showResults]);
+    }, [currentIndex, loading, questions, showResults, calculateVoteCountsForQuestion]);
 
     const handleNext = useCallback(() => {
         if (currentIndex < questions.length - 1) {
@@ -519,6 +588,28 @@ export default function HostPage() {
                                             <Circle className="w-3 h-3" />
                                         )}
                                         <span>팀{teamId}</span>
+                                    </div>
+                                ))}
+                            </div>
+                            {/* 실시간 리더보드 */}
+                            <div className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-yellow-500/10 to-orange-500/10 rounded-full border border-yellow-500/30">
+                                <Trophy className="w-4 h-4 text-yellow-500" />
+                                <span className="text-xs text-muted-foreground mr-1">현재 점수:</span>
+                                {leaderboard.map((entry, idx) => (
+                                    <div
+                                        key={entry.teamId}
+                                        className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-bold transition-all ${
+                                            idx === 0
+                                                ? "bg-yellow-500/20 text-yellow-500"
+                                                : idx === 1
+                                                ? "bg-gray-400/20 text-gray-400"
+                                                : idx === 2
+                                                ? "bg-orange-700/20 text-orange-600"
+                                                : "bg-muted/50 text-muted-foreground"
+                                        }`}
+                                    >
+                                        <span>팀{entry.teamId}</span>
+                                        <span className="font-black">{entry.score}</span>
                                     </div>
                                 ))}
                             </div>

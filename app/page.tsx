@@ -11,16 +11,21 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Gamepad2, Users, Lock, HelpCircle, Award, Trophy, UserCheck } from "lucide-react";
+import { Gamepad2, Users, Lock, HelpCircle, Award, Trophy, UserCheck, QrCode, X } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { QRCodeSVG } from "qrcode.react";
 
 export default function Home() {
     const router = useRouter();
     const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+    const [showQRDialog, setShowQRDialog] = useState(false);
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
+
+    // 클라이언트에서 현재 URL 가져오기
+    const baseUrl = typeof window !== "undefined" ? window.location.origin : "";
 
     const handleHostClick = () => {
         setShowPasswordDialog(true);
@@ -95,14 +100,24 @@ export default function Home() {
                     {/* Teams Card */}
                     <Card className="group hover:shadow-2xl hover:shadow-white/10 active:scale-[0.98] transition-all duration-500 border-2 hover:border-zinc-700 bg-card/50 backdrop-blur-sm touch-manipulation">
                         <CardContent className="p-8 space-y-6">
-                            <div className="space-y-3">
-                                <div className="w-14 h-14 rounded-xl bg-muted flex items-center justify-center group-hover:scale-110 group-hover:bg-muted/80 transition-all duration-300">
-                                    <Users className="w-7 h-7 text-muted-foreground" />
+                            <div className="flex items-start justify-between">
+                                <div className="space-y-3">
+                                    <div className="w-14 h-14 rounded-xl bg-muted flex items-center justify-center group-hover:scale-110 group-hover:bg-muted/80 transition-all duration-300">
+                                        <Users className="w-7 h-7 text-muted-foreground" />
+                                    </div>
+                                    <div>
+                                        <h2 className="text-2xl font-bold mb-1">팀 선택</h2>
+                                        <p className="text-sm text-muted-foreground">참여할 팀을 선택하세요</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <h2 className="text-2xl font-bold mb-1">팀 선택</h2>
-                                    <p className="text-sm text-muted-foreground">참여할 팀을 선택하세요</p>
-                                </div>
+                                <Button
+                                    variant="outline"
+                                    size="icon"
+                                    className="shrink-0 border-2 hover:border-orange-500 hover:text-orange-500"
+                                    onClick={() => setShowQRDialog(true)}
+                                >
+                                    <QrCode className="w-5 h-5" />
+                                </Button>
                             </div>
                             <div className="grid grid-cols-2 gap-3">
                                 {[1, 2, 3, 4].map((teamNum) => (
@@ -164,7 +179,8 @@ export default function Home() {
                                     <div>
                                         <p className="font-semibold text-foreground">공동 순위</p>
                                         <p className="text-muted-foreground">
-                                            공동 1등/2등이 있으면 그 중 <span className="font-bold">아무나 선택해도</span> 정답!
+                                            공동 1등/2등이 있으면 그 중{" "}
+                                            <span className="font-bold">아무나 선택해도</span> 정답!
                                         </p>
                                     </div>
                                 </div>
@@ -206,6 +222,51 @@ export default function Home() {
                             className="bg-orange-500 hover:bg-orange-600 text-white"
                         >
                             확인
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* QR Code Dialog */}
+            <Dialog open={showQRDialog} onOpenChange={setShowQRDialog}>
+                <DialogContent className="sm:max-w-2xl">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2">
+                            <QrCode className="w-5 h-5 text-orange-500" />
+                            팀 접속 QR 코드
+                        </DialogTitle>
+                        <DialogDescription>스마트폰으로 QR 코드를 스캔하여 팀 페이지에 접속하세요</DialogDescription>
+                    </DialogHeader>
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-4">
+                        {[1, 2, 3, 4].map((teamNum) => (
+                            <div
+                                key={teamNum}
+                                className="flex flex-col items-center gap-3 p-4 rounded-xl border-2 border-border bg-white"
+                            >
+                                <div className="text-lg font-bold text-zinc-900">팀 {teamNum}</div>
+                                {baseUrl && (
+                                    <QRCodeSVG
+                                        value={`${baseUrl}/team/${teamNum}`}
+                                        size={120}
+                                        level="M"
+                                        includeMargin={false}
+                                    />
+                                )}
+                                <p className="text-xs text-zinc-500 text-center break-all">
+                                    {baseUrl}/team/{teamNum}
+                                </p>
+                            </div>
+                        ))}
+                    </div>
+                    <DialogFooter>
+                        <Button
+                            type="button"
+                            variant="outline"
+                            onClick={() => setShowQRDialog(false)}
+                            className="w-full sm:w-auto"
+                        >
+                            <X className="w-4 h-4 mr-2" />
+                            닫기
                         </Button>
                     </DialogFooter>
                 </DialogContent>
