@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ChevronLeft, ChevronRight, Eye, EyeOff, Trophy, RotateCcw, Medal, Award, Sparkles } from "lucide-react";
+import { ChevronLeft, ChevronRight, Eye, EyeOff, Trophy, RotateCcw, Medal, Award, Sparkles, CheckCircle2, Circle } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import type { Question, Answer } from "@/types/game";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -36,6 +36,7 @@ export default function HostPage() {
     const [loading, setLoading] = useState(true);
     const [showResults, setShowResults] = useState(false);
     const [teamResults, setTeamResults] = useState<TeamResult[]>([]);
+    const [teamSubmissions, setTeamSubmissions] = useState<Record<string, boolean>>({});
 
     // Fetch questions from API
     useEffect(() => {
@@ -71,6 +72,37 @@ export default function HostPage() {
             updateGameState();
         }
     }, [currentIndex, loading, questions.length]);
+
+    // Poll team submissions every 2 seconds
+    useEffect(() => {
+        if (loading || questions.length === 0 || showResults) return;
+
+        const currentQuestion = questions[currentIndex];
+        if (!currentQuestion) return;
+
+        async function fetchTeamSubmissions() {
+            try {
+                const response = await fetch("/api/team-answers");
+                const answers: TeamAnswerData[] = await response.json();
+                
+                // 현재 질문에 대한 팀별 제출 현황
+                const submissions: Record<string, boolean> = {};
+                ["1", "2", "3", "4"].forEach(teamId => {
+                    submissions[teamId] = answers.some(
+                        a => a.teamId === teamId && a.questionId === currentQuestion.id
+                    );
+                });
+                setTeamSubmissions(submissions);
+            } catch (error) {
+                console.error("Failed to fetch team submissions:", error);
+            }
+        }
+
+        fetchTeamSubmissions();
+        const interval = setInterval(fetchTeamSubmissions, 2000);
+
+        return () => clearInterval(interval);
+    }, [currentIndex, loading, questions, showResults]);
 
     const handleNext = useCallback(() => {
         if (currentIndex < questions.length - 1) {
@@ -403,9 +435,32 @@ export default function HostPage() {
                 <div className="flex items-center justify-between">
                     <div>
                         <h1 className="text-4xl font-black mb-2">진행자 화면</h1>
-                        <p className="text-muted-foreground">
-                            질문 {currentIndex + 1} / {questions.length}
-                        </p>
+                        <div className="flex items-center gap-4">
+                            <p className="text-muted-foreground">
+                                질문 {currentIndex + 1} / {questions.length}
+                            </p>
+                            {/* 팀 제출 현황 */}
+                            <div className="flex items-center gap-2 px-3 py-1.5 bg-card/50 rounded-full border border-border">
+                                <span className="text-xs text-muted-foreground mr-1">제출:</span>
+                                {["1", "2", "3", "4"].map((teamId) => (
+                                    <div
+                                        key={teamId}
+                                        className={`flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium transition-all ${
+                                            teamSubmissions[teamId]
+                                                ? "bg-green-500/20 text-green-500"
+                                                : "bg-muted/50 text-muted-foreground"
+                                        }`}
+                                    >
+                                        {teamSubmissions[teamId] ? (
+                                            <CheckCircle2 className="w-3 h-3" />
+                                        ) : (
+                                            <Circle className="w-3 h-3" />
+                                        )}
+                                        <span>팀{teamId}</span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
                     </div>
                     <div className="flex gap-3">
                         <Button

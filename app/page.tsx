@@ -144,9 +144,7 @@ export default function Home() {
                                     <Award className="w-5 h-5 text-orange-500 mt-0.5 shrink-0" />
                                     <div>
                                         <p className="font-semibold text-foreground">1등 & 2등 예측</p>
-                                        <p className="text-muted-foreground">
-                                            각 질문마다 1등과 2등을 맞춰보세요.
-                                        </p>
+                                        <p className="text-muted-foreground">각 질문마다 1등과 2등을 맞춰보세요.</p>
                                     </div>
                                 </div>
                             </div>
@@ -156,8 +154,8 @@ export default function Home() {
                                     <div>
                                         <p className="font-semibold text-foreground">점수 계산</p>
                                         <p className="text-muted-foreground">
-                                            1등 맞추면 <span className="text-orange-500 font-bold">2점</span>, 
-                                            2등 맞추면 <span className="text-blue-500 font-bold">1점</span>
+                                            1등 맞추면 <span className="text-orange-500 font-bold">2점</span>, 2등
+                                            맞추면 <span className="text-blue-500 font-bold">1점</span>
                                         </p>
                                     </div>
                                 </div>
@@ -165,9 +163,7 @@ export default function Home() {
                                     <Gamepad2 className="w-5 h-5 text-muted-foreground mt-0.5 shrink-0" />
                                     <div>
                                         <p className="font-semibold text-foreground">진행자</p>
-                                        <p className="text-muted-foreground">
-                                            질문 진행 및 결과 공개를 담당합니다.
-                                        </p>
+                                        <p className="text-muted-foreground">질문 진행 및 결과 공개를 담당합니다.</p>
                                     </div>
                                 </div>
                             </div>
