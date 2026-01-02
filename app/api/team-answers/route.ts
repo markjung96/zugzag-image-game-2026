@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { kvStore } from '@/lib/kv';
+import { redisStore } from '@/lib/redis';
 
 interface TeamAnswerData {
     teamId: string;
@@ -13,7 +13,7 @@ const TEAM_ANSWERS_KEY = 'team:answers';
 
 // GET: 모든 팀 답변 조회
 export async function GET() {
-    const answers = await kvStore.get<TeamAnswerData[]>(TEAM_ANSWERS_KEY);
+    const answers = await redisStore.get<TeamAnswerData[]>(TEAM_ANSWERS_KEY);
     return NextResponse.json(answers || []);
 }
 
@@ -30,7 +30,7 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        let answers = await kvStore.get<TeamAnswerData[]>(TEAM_ANSWERS_KEY);
+        let answers = await redisStore.get<TeamAnswerData[]>(TEAM_ANSWERS_KEY);
         if (!answers) {
             answers = [];
         }
@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
             timestamp: Date.now(),
         });
 
-        await kvStore.set(TEAM_ANSWERS_KEY, answers);
+        await redisStore.set(TEAM_ANSWERS_KEY, answers);
 
         return NextResponse.json({ success: true });
     } catch (error) {
@@ -63,7 +63,7 @@ export async function POST(request: NextRequest) {
 
 // DELETE: 모든 팀 답변 초기화
 export async function DELETE() {
-    await kvStore.del(TEAM_ANSWERS_KEY);
+    await redisStore.del(TEAM_ANSWERS_KEY);
     return NextResponse.json({ success: true });
 }
 

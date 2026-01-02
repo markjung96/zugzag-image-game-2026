@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { kvStore } from '@/lib/kv';
+import { redisStore } from '@/lib/redis';
 
 interface TeamSession {
     teamId: string;
@@ -20,13 +20,13 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({ error: 'teamId required' }, { status: 400 });
     }
 
-    let sessions = await kvStore.get<TeamSession[]>(TEAM_SESSIONS_KEY);
+    let sessions = await redisStore.get<TeamSession[]>(TEAM_SESSIONS_KEY);
     if (!sessions) sessions = [];
 
     // 타임아웃된 세션 제거
     const now = Date.now();
     sessions = sessions.filter(s => now - s.lastHeartbeat < HEARTBEAT_TIMEOUT);
-    await kvStore.set(TEAM_SESSIONS_KEY, sessions);
+    await redisStore.set(TEAM_SESSIONS_KEY, sessions);
 
     const existingSession = sessions.find(s => s.teamId === teamId);
 
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
             return NextResponse.json({ error: 'teamId and sessionToken required' }, { status: 400 });
         }
 
-        let sessions = await kvStore.get<TeamSession[]>(TEAM_SESSIONS_KEY);
+        let sessions = await redisStore.get<TeamSession[]>(TEAM_SESSIONS_KEY);
         if (!sessions) sessions = [];
 
         // 타임아웃된 세션 제거
@@ -67,7 +67,7 @@ export async function POST(request: NextRequest) {
             if (existingSession.sessionToken === sessionToken) {
                 // 본인 heartbeat 업데이트
                 existingSession.lastHeartbeat = now;
-                await kvStore.set(TEAM_SESSIONS_KEY, sessions);
+                await redisStore.set(TEAM_SESSIONS_KEY, sessions);
                 return NextResponse.json({ success: true, message: 'heartbeat updated' });
             } else {
                 // 다른 사람이 이미 접속 중
@@ -82,7 +82,7 @@ export async function POST(request: NextRequest) {
             lastHeartbeat: now,
         });
 
-        await kvStore.set(TEAM_SESSIONS_KEY, sessions);
+        await redisStore.set(TEAM_SESSIONS_KEY, sessions);
         return NextResponse.json({ success: true, message: 'session created' });
     } catch (error) {
         console.error('Failed to manage team session:', error);
@@ -99,7 +99,7 @@ export async function DELETE(request: NextRequest) {
 
     if (resetAll === 'true') {
         // 모든 세션 초기화 (호스트용)
-        await kvStore.del(TEAM_SESSIONS_KEY);
+        await redisStore.del(TEAM_SESSIONS_KEY);
         return NextResponse.json({ success: true, message: 'all sessions cleared' });
     }
 
@@ -107,7 +107,7 @@ export async function DELETE(request: NextRequest) {
         return NextResponse.json({ error: 'teamId and sessionToken required' }, { status: 400 });
     }
 
-    let sessions = await kvStore.get<TeamSession[]>(TEAM_SESSIONS_KEY);
+    let sessions = await redisStore.get<TeamSession[]>(TEAM_SESSIONS_KEY);
     if (!sessions) sessions = [];
 
     const sessionIndex = sessions.findIndex(s => s.teamId === teamId && s.sessionToken === sessionToken);
@@ -117,7 +117,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     sessions.splice(sessionIndex, 1);
-    await kvStore.set(TEAM_SESSIONS_KEY, sessions);
+    await redisStore.set(TEAM_SESSIONS_KEY, sessions);
 
     return NextResponse.json({ success: true, message: 'session removed' });
 }

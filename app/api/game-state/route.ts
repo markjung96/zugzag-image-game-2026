@@ -1,12 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { kvStore } from '@/lib/kv';
+import { redisStore } from '@/lib/redis';
 import type { GameState } from '@/types/game';
 
 const GAME_STATE_KEY = 'game:state';
 
 // GET: 현재 게임 상태 조회
 export async function GET() {
-    const state = await kvStore.get<GameState>(GAME_STATE_KEY);
+    const state = await redisStore.get<GameState>(GAME_STATE_KEY);
 
     if (!state) {
         // 초기 상태
@@ -14,7 +14,7 @@ export async function GET() {
             currentQuestionIndex: 0,
             totalQuestions: 10,
         };
-        await kvStore.set(GAME_STATE_KEY, initialState);
+        await redisStore.set(GAME_STATE_KEY, initialState);
         return NextResponse.json(initialState);
     }
 
@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
             totalQuestions: 10,
         };
 
-        await kvStore.set(GAME_STATE_KEY, state);
+        await redisStore.set(GAME_STATE_KEY, state);
 
         return NextResponse.json(state);
     } catch (error) {
@@ -52,14 +52,14 @@ export async function POST(request: NextRequest) {
 
 // DELETE: 게임 초기화
 export async function DELETE() {
-    await kvStore.del(GAME_STATE_KEY);
+    await redisStore.del(GAME_STATE_KEY);
 
     const initialState: GameState = {
         currentQuestionIndex: 0,
         totalQuestions: 10,
     };
 
-    await kvStore.set(GAME_STATE_KEY, initialState);
+    await redisStore.set(GAME_STATE_KEY, initialState);
 
     return NextResponse.json(initialState);
 }

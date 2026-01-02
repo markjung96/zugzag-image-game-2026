@@ -24,7 +24,7 @@ async function getRedisClient(): Promise<RedisClientType | null> {
 // 메모리 저장소 (Redis가 설정되지 않은 경우 fallback)
 const memoryStore = new Map<string, string>();
 
-export const kvStore = {
+export const redisStore = {
     async get<T>(key: string): Promise<T | null> {
         try {
             const client = await getRedisClient();
@@ -68,3 +68,4 @@ export const kvStore = {
         memoryStore.delete(key);
     },
 };
+
