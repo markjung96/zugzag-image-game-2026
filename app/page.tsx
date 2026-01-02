@@ -11,7 +11,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Gamepad2, Users, Lock, HelpCircle, Award, Trophy, UserCheck, QrCode, X } from "lucide-react";
+import { Gamepad2, Users, Lock, HelpCircle, Award, Trophy, UserCheck, QrCode, X, Trash2, Loader2 } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -21,6 +21,11 @@ export default function Home() {
     const router = useRouter();
     const [showPasswordDialog, setShowPasswordDialog] = useState(false);
     const [showQRDialog, setShowQRDialog] = useState(false);
+    const [showResetDialog, setShowResetDialog] = useState(false);
+    const [resetPassword, setResetPassword] = useState("");
+    const [resetError, setResetError] = useState("");
+    const [isResetting, setIsResetting] = useState(false);
+    const [resetSuccess, setResetSuccess] = useState(false);
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
 
@@ -46,6 +51,41 @@ export default function Home() {
     const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
         if (e.key === "Enter") {
             handlePasswordSubmit();
+        }
+    };
+
+    const handleResetClick = () => {
+        setShowResetDialog(true);
+        setResetPassword("");
+        setResetError("");
+        setResetSuccess(false);
+    };
+
+    const handleResetSubmit = async () => {
+        if (resetPassword !== "1805") {
+            setResetError("비밀번호가 올바르지 않습니다");
+            setResetPassword("");
+            return;
+        }
+
+        setIsResetting(true);
+        try {
+            await fetch("/api/team-answers", { method: "DELETE" });
+            await fetch("/api/game-state", { method: "DELETE" });
+            await fetch("/api/team-session?resetAll=true", { method: "DELETE" });
+            setResetSuccess(true);
+            setResetError("");
+        } catch (error) {
+            console.error("Failed to reset:", error);
+            setResetError("초기화에 실패했습니다");
+        } finally {
+            setIsResetting(false);
+        }
+    };
+
+    const handleResetKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === "Enter") {
+            handleResetSubmit();
         }
     };
 
@@ -188,6 +228,19 @@ export default function Home() {
                         </div>
                     </CardContent>
                 </Card>
+
+                {/* 관리자 영역 */}
+                <div className="mt-4 flex justify-end">
+                    <Button
+                        variant="ghost"
+                        size="sm"
+                        className="text-xs text-muted-foreground hover:text-red-500"
+                        onClick={handleResetClick}
+                    >
+                        <Trash2 className="w-3 h-3 mr-1" />
+                        데이터 초기화
+                    </Button>
+                </div>
             </div>
 
             {/* Password Dialog */}
@@ -239,20 +292,11 @@ export default function Home() {
                     </DialogHeader>
                     <div className="flex flex-col items-center gap-4 py-6">
                         <div className="p-6 rounded-2xl border-2 border-orange-500/30 bg-white shadow-lg">
-                            {baseUrl && (
-                                <QRCodeSVG
-                                    value={baseUrl}
-                                    size={200}
-                                    level="M"
-                                    includeMargin={false}
-                                />
-                            )}
+                            {baseUrl && <QRCodeSVG value={baseUrl} size={200} level="M" includeMargin={false} />}
                         </div>
                         <div className="text-center space-y-1">
                             <p className="text-sm font-medium text-foreground">{baseUrl}</p>
-                            <p className="text-xs text-muted-foreground">
-                                스캔 후 팀을 선택하세요
-                            </p>
+                            <p className="text-xs text-muted-foreground">스캔 후 팀을 선택하세요</p>
                         </div>
                     </div>
                     <DialogFooter>
@@ -266,6 +310,84 @@ export default function Home() {
                             닫기
                         </Button>
                     </DialogFooter>
+                </DialogContent>
+            </Dialog>
+
+            {/* Reset Dialog */}
+            <Dialog open={showResetDialog} onOpenChange={setShowResetDialog}>
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle className="flex items-center gap-2 text-red-500">
+                            <Trash2 className="w-5 h-5" />
+                            데이터 초기화
+                        </DialogTitle>
+                        <DialogDescription>
+                            모든 팀 답변, 세션, 게임 상태를 초기화합니다.
+                            <br />
+                            <span className="text-red-500 font-semibold">이 작업은 되돌릴 수 없습니다.</span>
+                        </DialogDescription>
+                    </DialogHeader>
+                    {resetSuccess ? (
+                        <div className="py-8 text-center space-y-4">
+                            <div className="w-16 h-16 mx-auto rounded-full bg-green-500/20 flex items-center justify-center">
+                                <Trash2 className="w-8 h-8 text-green-500" />
+                            </div>
+                            <p className="text-lg font-semibold text-green-500">초기화 완료!</p>
+                            <p className="text-sm text-muted-foreground">모든 데이터가 초기화되었습니다.</p>
+                            <Button
+                                type="button"
+                                variant="outline"
+                                onClick={() => setShowResetDialog(false)}
+                                className="w-full"
+                            >
+                                닫기
+                            </Button>
+                        </div>
+                    ) : (
+                        <>
+                            <div className="space-y-4 py-4">
+                                <Input
+                                    type="password"
+                                    placeholder="관리자 비밀번호 입력"
+                                    value={resetPassword}
+                                    onChange={(e) => setResetPassword(e.target.value)}
+                                    onKeyDown={handleResetKeyDown}
+                                    className="text-center text-lg tracking-widest"
+                                    autoFocus
+                                    disabled={isResetting}
+                                />
+                                {resetError && <p className="text-sm text-destructive text-center">{resetError}</p>}
+                            </div>
+                            <DialogFooter className="sm:justify-center">
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    onClick={() => setShowResetDialog(false)}
+                                    disabled={isResetting}
+                                >
+                                    취소
+                                </Button>
+                                <Button
+                                    type="button"
+                                    onClick={handleResetSubmit}
+                                    variant="destructive"
+                                    disabled={isResetting}
+                                >
+                                    {isResetting ? (
+                                        <>
+                                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
+                                            초기화 중...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Trash2 className="w-4 h-4 mr-2" />
+                                            초기화
+                                        </>
+                                    )}
+                                </Button>
+                            </DialogFooter>
+                        </>
+                    )}
                 </DialogContent>
             </Dialog>
         </div>
