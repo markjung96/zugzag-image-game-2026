@@ -179,9 +179,7 @@ export default function HostPage() {
                 }
 
                 // 점수 순으로 정렬
-                const sortedLeaderboard = Array.from(leaderboardMap.values()).sort(
-                    (a, b) => b.score - a.score
-                );
+                const sortedLeaderboard = Array.from(leaderboardMap.values()).sort((a, b) => b.score - a.score);
                 setLeaderboard(sortedLeaderboard);
             } catch (error) {
                 console.error("Failed to fetch team submissions:", error);

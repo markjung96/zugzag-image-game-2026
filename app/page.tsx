@@ -229,41 +229,38 @@ export default function Home() {
 
             {/* QR Code Dialog */}
             <Dialog open={showQRDialog} onOpenChange={setShowQRDialog}>
-                <DialogContent className="sm:max-w-2xl">
+                <DialogContent className="sm:max-w-md">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
                             <QrCode className="w-5 h-5 text-orange-500" />
-                            팀 접속 QR 코드
+                            게임 접속 QR 코드
                         </DialogTitle>
-                        <DialogDescription>스마트폰으로 QR 코드를 스캔하여 팀 페이지에 접속하세요</DialogDescription>
+                        <DialogDescription>스마트폰으로 QR 코드를 스캔하여 접속하세요</DialogDescription>
                     </DialogHeader>
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 py-4">
-                        {[1, 2, 3, 4].map((teamNum) => (
-                            <div
-                                key={teamNum}
-                                className="flex flex-col items-center gap-3 p-4 rounded-xl border-2 border-border bg-white"
-                            >
-                                <div className="text-lg font-bold text-zinc-900">팀 {teamNum}</div>
-                                {baseUrl && (
-                                    <QRCodeSVG
-                                        value={`${baseUrl}/team/${teamNum}`}
-                                        size={120}
-                                        level="M"
-                                        includeMargin={false}
-                                    />
-                                )}
-                                <p className="text-xs text-zinc-500 text-center break-all">
-                                    {baseUrl}/team/{teamNum}
-                                </p>
-                            </div>
-                        ))}
+                    <div className="flex flex-col items-center gap-4 py-6">
+                        <div className="p-6 rounded-2xl border-2 border-orange-500/30 bg-white shadow-lg">
+                            {baseUrl && (
+                                <QRCodeSVG
+                                    value={baseUrl}
+                                    size={200}
+                                    level="M"
+                                    includeMargin={false}
+                                />
+                            )}
+                        </div>
+                        <div className="text-center space-y-1">
+                            <p className="text-sm font-medium text-foreground">{baseUrl}</p>
+                            <p className="text-xs text-muted-foreground">
+                                스캔 후 팀을 선택하세요
+                            </p>
+                        </div>
                     </div>
                     <DialogFooter>
                         <Button
                             type="button"
                             variant="outline"
                             onClick={() => setShowQRDialog(false)}
-                            className="w-full sm:w-auto"
+                            className="w-full"
                         >
                             <X className="w-4 h-4 mr-2" />
                             닫기
