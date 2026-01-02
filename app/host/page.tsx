@@ -237,24 +237,30 @@ export default function HostPage() {
                                                             <div
                                                                 key={idx}
                                                                 className={`flex items-start gap-3 p-3 rounded-lg ${
-                                                                    isFirst 
-                                                                        ? "bg-orange-500/5 border border-orange-500/20" 
+                                                                    isFirst
+                                                                        ? "bg-orange-500/5 border border-orange-500/20"
                                                                         : isSecond
                                                                         ? "bg-blue-500/5 border border-blue-500/20"
                                                                         : "bg-muted/30 border border-border"
                                                                 }`}
                                                             >
-                                                                <span className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold ${
-                                                                    isFirst 
-                                                                        ? "bg-orange-500 text-white" 
-                                                                        : isSecond
-                                                                        ? "bg-blue-500 text-white"
-                                                                        : "bg-muted text-muted-foreground"
-                                                                }`}>
+                                                                <span
+                                                                    className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold ${
+                                                                        isFirst
+                                                                            ? "bg-orange-500 text-white"
+                                                                            : isSecond
+                                                                            ? "bg-blue-500 text-white"
+                                                                            : "bg-muted text-muted-foreground"
+                                                                    }`}
+                                                                >
                                                                     {idx + 1}
                                                                 </span>
                                                                 <p className="text-base text-foreground leading-relaxed flex-1">
-                                                                    {answer.reason || <span className="text-muted-foreground italic">사유 없음</span>}
+                                                                    {answer.reason || (
+                                                                        <span className="text-muted-foreground italic">
+                                                                            사유 없음
+                                                                        </span>
+                                                                    )}
                                                                 </p>
                                                             </div>
                                                         ))}
