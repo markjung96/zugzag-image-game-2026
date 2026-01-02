@@ -84,9 +84,25 @@ export default function HostPage() {
         answers.forEach((answer) => {
             counts.set(answer.name, (counts.get(answer.name) || 0) + 1);
         });
-        return Array.from(counts.entries())
+        const sorted = Array.from(counts.entries())
             .map(([name, count]) => ({ name, count }))
             .sort((a, b) => b.count - a.count);
+        
+        // 공동 순위 계산
+        let currentRank = 1;
+        let prevCount = -1;
+        
+        return sorted.map((item, index) => {
+            if (item.count !== prevCount) {
+                currentRank = index + 1;
+            }
+            prevCount = item.count;
+            
+            // 같은 순위가 2명 이상인지 확인
+            const isTied = sorted.filter(s => s.count === item.count).length > 1;
+            
+            return { ...item, rank: currentRank, isTied };
+        });
     };
 
     if (loading) {
@@ -170,9 +186,7 @@ export default function HostPage() {
             <div className="max-w-7xl mx-auto space-y-6">
                 <Card className="border-2 border-orange-500 bg-card/50 backdrop-blur-sm">
                     <CardContent className="p-12">
-                        <p className="text-5xl font-bold text-center leading-relaxed">
-                            {currentQuestion.text}
-                        </p>
+                        <p className="text-5xl font-bold text-center leading-relaxed">{currentQuestion.text}</p>
                     </CardContent>
                 </Card>
 
@@ -181,30 +195,38 @@ export default function HostPage() {
                     <div className="space-y-4">
                         <h2 className="text-3xl font-bold text-foreground">투표 결과</h2>
                         <div className="grid gap-4">
-                            {voteCounts.map((item, index) => {
-                                const allAnswers = currentQuestion.answers.filter(
-                                    (a) => a.name === item.name
-                                );
-                                const isFirst = index === 0;
+                            {voteCounts.map((item) => {
+                                const allAnswers = currentQuestion.answers.filter((a) => a.name === item.name);
+                                const isFirst = item.rank === 1;
+                                const isSecond = item.rank === 2;
+                                
+                                // 스타일 결정
+                                const cardStyle = isFirst 
+                                    ? "border-orange-500 bg-orange-500/10" 
+                                    : isSecond 
+                                        ? "border-blue-500 bg-blue-500/10"
+                                        : "border-border bg-card/50";
+                                
+                                const textStyle = isFirst 
+                                    ? "text-orange-500" 
+                                    : isSecond 
+                                        ? "text-blue-500"
+                                        : "text-foreground";
+                                
+                                // 순위 텍스트 (공동인 경우 "공동" 추가)
+                                const rankText = item.isTied ? `공동 ${item.rank}등` : `#${item.rank}`;
+                                
                                 return (
                                     <Card
                                         key={item.name}
-                                        className={`border-2 transition-all duration-300 ${
-                                            isFirst
-                                                ? "border-orange-500 bg-orange-500/10"
-                                                : "border-border bg-card/50"
-                                        }`}
+                                        className={`border-2 transition-all duration-300 ${cardStyle}`}
                                     >
                                         <CardContent className="p-6">
                                             <div className="flex items-start justify-between gap-6">
                                                 <div className="flex-1">
                                                     <div className="flex items-center gap-4 mb-3">
-                                                        <span
-                                                            className={`text-4xl font-black ${
-                                                                isFirst ? "text-orange-500" : "text-foreground"
-                                                            }`}
-                                                        >
-                                                            #{index + 1}
+                                                        <span className={`text-3xl font-black ${textStyle}`}>
+                                                            {rankText}
                                                         </span>
                                                         <span className="text-3xl font-bold text-foreground">
                                                             {item.name}
@@ -212,8 +234,8 @@ export default function HostPage() {
                                                     </div>
                                                     <div className="space-y-2">
                                                         {allAnswers.map((answer, idx) => (
-                                                            <p 
-                                                                key={idx} 
+                                                            <p
+                                                                key={idx}
                                                                 className="text-lg text-muted-foreground leading-relaxed pl-4 border-l-2 border-muted"
                                                             >
                                                                 {answer.reason}
@@ -222,16 +244,10 @@ export default function HostPage() {
                                                     </div>
                                                 </div>
                                                 <div className="text-center min-w-[120px]">
-                                                    <div
-                                                        className={`text-5xl font-black ${
-                                                            isFirst ? "text-orange-500" : "text-foreground"
-                                                        }`}
-                                                    >
+                                                    <div className={`text-5xl font-black ${textStyle}`}>
                                                         {item.count}
                                                     </div>
-                                                    <div className="text-sm text-muted-foreground mt-1">
-                                                        표
-                                                    </div>
+                                                    <div className="text-sm text-muted-foreground mt-1">표</div>
                                                 </div>
                                             </div>
                                         </CardContent>
