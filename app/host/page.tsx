@@ -2,7 +2,23 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ChevronLeft, ChevronRight, Eye, EyeOff, Trophy, RotateCcw, Medal, Award, Sparkles, CheckCircle2, Circle } from "lucide-react";
+import {
+    ChevronLeft,
+    ChevronRight,
+    Eye,
+    EyeOff,
+    Trophy,
+    RotateCcw,
+    Medal,
+    Award,
+    Sparkles,
+    CheckCircle2,
+    Circle,
+    Timer,
+    Play,
+    Pause,
+    RotateCw,
+} from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import type { Question, Answer } from "@/types/game";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -37,6 +53,11 @@ export default function HostPage() {
     const [showResults, setShowResults] = useState(false);
     const [teamResults, setTeamResults] = useState<TeamResult[]>([]);
     const [teamSubmissions, setTeamSubmissions] = useState<Record<string, boolean>>({});
+    
+    // 타이머 상태
+    const [timerSeconds, setTimerSeconds] = useState(30);
+    const [timerRunning, setTimerRunning] = useState(false);
+    const [timerDefault, setTimerDefault] = useState(30);
 
     // Fetch questions from API
     useEffect(() => {
@@ -84,12 +105,12 @@ export default function HostPage() {
             try {
                 const response = await fetch("/api/team-answers");
                 const answers: TeamAnswerData[] = await response.json();
-                
+
                 // 현재 질문에 대한 팀별 제출 현황
                 const submissions: Record<string, boolean> = {};
-                ["1", "2", "3", "4"].forEach(teamId => {
+                ["1", "2", "3", "4"].forEach((teamId) => {
                     submissions[teamId] = answers.some(
-                        a => a.teamId === teamId && a.questionId === currentQuestion.id
+                        (a) => a.teamId === teamId && a.questionId === currentQuestion.id
                     );
                 });
                 setTeamSubmissions(submissions);
@@ -117,6 +138,47 @@ export default function HostPage() {
             setShowAnswer(false);
         }
     }, [currentIndex]);
+
+    // 타이머 로직
+    useEffect(() => {
+        if (!timerRunning || timerSeconds <= 0) return;
+
+        const interval = setInterval(() => {
+            setTimerSeconds((prev) => {
+                if (prev <= 1) {
+                    setTimerRunning(false);
+                    return 0;
+                }
+                return prev - 1;
+            });
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [timerRunning, timerSeconds]);
+
+    // 질문 변경 시 타이머 리셋
+    useEffect(() => {
+        setTimerSeconds(timerDefault);
+        setTimerRunning(false);
+    }, [currentIndex, timerDefault]);
+
+    const handleTimerToggle = () => {
+        if (timerSeconds === 0) {
+            setTimerSeconds(timerDefault);
+        }
+        setTimerRunning(!timerRunning);
+    };
+
+    const handleTimerReset = () => {
+        setTimerSeconds(timerDefault);
+        setTimerRunning(false);
+    };
+
+    const handleTimerSet = (seconds: number) => {
+        setTimerDefault(seconds);
+        setTimerSeconds(seconds);
+        setTimerRunning(false);
+    };
 
     // Keyboard shortcuts
     useEffect(() => {
@@ -517,6 +579,71 @@ export default function HostPage() {
 
             {/* Question Display */}
             <div className="max-w-7xl mx-auto space-y-6">
+                {/* 타이머 */}
+                <div className="flex items-center justify-center gap-4">
+                    <div
+                        className={`flex items-center gap-3 px-6 py-3 rounded-2xl border-2 transition-all ${
+                            timerSeconds === 0
+                                ? "border-red-500 bg-red-500/20 animate-pulse"
+                                : timerSeconds <= 10
+                                ? "border-yellow-500 bg-yellow-500/10"
+                                : "border-border bg-card/50"
+                        }`}
+                    >
+                        <Timer
+                            className={`w-6 h-6 ${
+                                timerSeconds === 0
+                                    ? "text-red-500"
+                                    : timerSeconds <= 10
+                                    ? "text-yellow-500"
+                                    : "text-muted-foreground"
+                            }`}
+                        />
+                        <span
+                            className={`text-4xl font-black tabular-nums ${
+                                timerSeconds === 0
+                                    ? "text-red-500"
+                                    : timerSeconds <= 10
+                                    ? "text-yellow-500"
+                                    : "text-foreground"
+                            }`}
+                        >
+                            {Math.floor(timerSeconds / 60)}:{(timerSeconds % 60).toString().padStart(2, "0")}
+                        </span>
+                    </div>
+                    <div className="flex gap-2">
+                        <Button
+                            onClick={handleTimerToggle}
+                            size="sm"
+                            variant={timerRunning ? "destructive" : "default"}
+                            className="touch-manipulation"
+                        >
+                            {timerRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
+                        </Button>
+                        <Button
+                            onClick={handleTimerReset}
+                            size="sm"
+                            variant="outline"
+                            className="touch-manipulation"
+                        >
+                            <RotateCw className="w-4 h-4" />
+                        </Button>
+                    </div>
+                    <div className="flex gap-1">
+                        {[30, 60, 90].map((sec) => (
+                            <Button
+                                key={sec}
+                                onClick={() => handleTimerSet(sec)}
+                                size="sm"
+                                variant={timerDefault === sec ? "secondary" : "ghost"}
+                                className="touch-manipulation text-xs"
+                            >
+                                {sec}초
+                            </Button>
+                        ))}
+                    </div>
+                </div>
+
                 <Card className="border-2 border-orange-500 bg-card/50 backdrop-blur-sm">
                     <CardContent className="p-12">
                         <p className="text-5xl font-bold text-center leading-relaxed">{currentQuestion.text}</p>
