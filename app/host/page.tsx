@@ -172,11 +172,12 @@ export default function HostPage() {
 
     // 게임 초기화
     const handleResetGame = async () => {
-        if (!confirm("모든 팀 답변을 초기화하시겠습니까?")) return;
+        if (!confirm("모든 팀 답변과 세션을 초기화하시겠습니까?")) return;
 
         try {
             await fetch("/api/team-answers", { method: "DELETE" });
             await fetch("/api/game-state", { method: "DELETE" });
+            await fetch("/api/team-session?resetAll=true", { method: "DELETE" });
             setCurrentIndex(0);
             setShowAnswer(false);
             setShowResults(false);
@@ -332,7 +333,8 @@ export default function HostPage() {
                                                                             : "text-red-500"
                                                                     }`}
                                                                 >
-                                                                    <span className="text-orange-500">1</span> {teamAnswer.firstPlace}
+                                                                    <span className="text-orange-500">1</span>{" "}
+                                                                    {teamAnswer.firstPlace}
                                                                 </div>
                                                                 <div
                                                                     className={`truncate flex items-center gap-0.5 ${
@@ -341,7 +343,8 @@ export default function HostPage() {
                                                                             : "text-red-500"
                                                                     }`}
                                                                 >
-                                                                    <span className="text-blue-500">2</span> {teamAnswer.secondPlace}
+                                                                    <span className="text-blue-500">2</span>{" "}
+                                                                    {teamAnswer.secondPlace}
                                                                 </div>
                                                             </div>
                                                         ) : (

@@ -2,10 +2,10 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { CheckCircle2, Loader2, Award } from "lucide-react";
-import { useState, useEffect } from "react";
+import { CheckCircle2, Loader2, Award, UserX } from "lucide-react";
+import { useState, useEffect, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
-import type { Question, GameState, TeamAnswer } from "@/types/game";
+import type { Question, GameState } from "@/types/game";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 // 선택 가능한 팀원 목록
@@ -18,6 +18,11 @@ const TEAM_MEMBERS = [
     "성경민"
 ];
 
+// 세션 토큰 생성
+function generateSessionToken() {
+    return `${Date.now()}-${Math.random().toString(36).substring(2, 15)}`;
+}
+
 export default function TeamPage() {
     const params = useParams();
     const router = useRouter();
@@ -29,9 +34,89 @@ export default function TeamPage() {
     const [secondPlace, setSecondPlace] = useState(""); // 2등 예측
     const [submitted, setSubmitted] = useState(false);
     const [loading, setLoading] = useState(true);
+    const [sessionBlocked, setSessionBlocked] = useState(false);
+    const [sessionToken, setSessionToken] = useState<string | null>(null);
 
     const currentQuestion = questions[gameState?.currentQuestionIndex ?? 0];
     const storageKey = `team-${teamId}-answers`;
+    const sessionStorageKey = `team-${teamId}-session`;
+
+    // 세션 관리
+    const checkAndCreateSession = useCallback(async () => {
+        // localStorage에서 기존 세션 토큰 확인
+        let token = localStorage.getItem(sessionStorageKey);
+        
+        if (!token) {
+            token = generateSessionToken();
+            localStorage.setItem(sessionStorageKey, token);
+        }
+        
+        setSessionToken(token);
+
+        // 세션 생성/heartbeat
+        try {
+            const response = await fetch("/api/team-session", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ teamId, sessionToken: token }),
+            });
+
+            if (response.status === 409) {
+                // 다른 사람이 접속 중
+                setSessionBlocked(true);
+                return false;
+            }
+
+            setSessionBlocked(false);
+            return true;
+        } catch (error) {
+            console.error("Failed to check session:", error);
+            return true; // 에러 시 접속 허용
+        }
+    }, [teamId, sessionStorageKey]);
+
+    // 초기 세션 체크
+    useEffect(() => {
+        checkAndCreateSession();
+    }, [checkAndCreateSession]);
+
+    // Heartbeat (3초마다)
+    useEffect(() => {
+        if (!sessionToken || sessionBlocked) return;
+
+        const interval = setInterval(async () => {
+            try {
+                const response = await fetch("/api/team-session", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({ teamId, sessionToken }),
+                });
+
+                if (response.status === 409) {
+                    setSessionBlocked(true);
+                }
+            } catch (error) {
+                console.error("Heartbeat failed:", error);
+            }
+        }, 3000);
+
+        return () => clearInterval(interval);
+    }, [teamId, sessionToken, sessionBlocked]);
+
+    // 페이지 떠날 때 세션 해제
+    useEffect(() => {
+        const handleUnload = () => {
+            if (sessionToken) {
+                navigator.sendBeacon(
+                    `/api/team-session?teamId=${teamId}&sessionToken=${sessionToken}`,
+                    ""
+                );
+            }
+        };
+
+        window.addEventListener("beforeunload", handleUnload);
+        return () => window.removeEventListener("beforeunload", handleUnload);
+    }, [teamId, sessionToken]);
 
     // Load saved answers from localStorage
     useEffect(() => {
@@ -152,6 +237,33 @@ export default function TeamPage() {
     const handleViewResults = () => {
         router.push(`/team/${teamId}/results`);
     };
+
+    // 세션 차단 화면
+    if (sessionBlocked) {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-background p-6">
+                <Card className="border-2 border-red-500 bg-card/50 backdrop-blur-sm max-w-md">
+                    <CardContent className="p-8 text-center space-y-4">
+                        <UserX className="w-16 h-16 text-red-500 mx-auto" />
+                        <h1 className="text-2xl font-bold text-foreground">접속 불가</h1>
+                        <p className="text-muted-foreground">
+                            다른 사람이 이미 <strong className="text-orange-500">팀 {teamId}</strong>에 접속해 있습니다.
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                            팀당 한 명만 접속할 수 있습니다.
+                        </p>
+                        <Button
+                            onClick={() => router.push("/")}
+                            variant="outline"
+                            className="mt-4"
+                        >
+                            홈으로 돌아가기
+                        </Button>
+                    </CardContent>
+                </Card>
+            </div>
+        );
+    }
 
     if (loading || !gameState || questions.length === 0) {
         return (
