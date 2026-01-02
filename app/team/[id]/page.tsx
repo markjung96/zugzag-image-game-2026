@@ -2,12 +2,21 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
 import { CheckCircle2, Loader2 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import type { Question, GameState, TeamAnswer } from "@/types/game";
 import { ThemeToggle } from "@/components/theme-toggle";
+
+// 선택 가능한 팀원 목록
+const TEAM_MEMBERS = [
+    "박범찬", "이상현", "이효섭", "정형섭", "신태환",
+    "정승필", "이덕재", "장연재", "김도현", "고우진",
+    "정지원", "김현우", "한기상", "임홍진", "박상현",
+    "강태현", "문성현", "윤현호", "김회찬", "이우근",
+    "임원태", "전수훈", "하성종", "김성엽", "류승호",
+    "성경민"
+];
 
 export default function TeamPage() {
     const params = useParams();
@@ -185,30 +194,34 @@ export default function TeamPage() {
                         ) : (
                             <div className="space-y-4">
                                 <div>
-                                    <label className="text-sm font-medium text-muted-foreground mb-2 block">
-                                        팀의 답변을 입력하세요
+                                    <label className="text-sm font-medium text-muted-foreground mb-3 block">
+                                        팀원을 선택하세요
                                     </label>
-                                    <Input
-                                        type="text"
-                                        placeholder="답변 입력..."
-                                        value={answer}
-                                        onChange={(e) => setAnswer(e.target.value)}
-                                        onKeyDown={(e) => {
-                                            if (e.key === "Enter") {
-                                                handleSubmit();
-                                            }
-                                        }}
-                                        className="text-lg h-14"
-                                        autoFocus
-                                    />
+                                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                                        {TEAM_MEMBERS.map((name) => (
+                                            <Button
+                                                key={name}
+                                                onClick={() => setAnswer(name)}
+                                                variant={answer === name ? "default" : "outline"}
+                                                size="sm"
+                                                className={`touch-manipulation text-sm py-3 h-auto ${
+                                                    answer === name 
+                                                        ? "bg-orange-500 hover:bg-orange-600 text-white border-orange-500" 
+                                                        : "hover:border-orange-500 hover:text-orange-500"
+                                                }`}
+                                            >
+                                                {name}
+                                            </Button>
+                                        ))}
+                                    </div>
                                 </div>
                                 <Button
                                     onClick={handleSubmit}
                                     disabled={!answer.trim()}
                                     size="lg"
-                                    className="w-full bg-orange-500 hover:bg-orange-600 text-white touch-manipulation h-14 text-lg font-semibold"
+                                    className="w-full bg-orange-500 hover:bg-orange-600 text-white touch-manipulation h-14 text-lg font-semibold disabled:opacity-50"
                                 >
-                                    답변 제출
+                                    {answer ? `"${answer}" 제출하기` : "팀원을 선택해주세요"}
                                 </Button>
                             </div>
                         )}
@@ -231,7 +244,7 @@ export default function TeamPage() {
                 <p className="text-center text-sm text-muted-foreground">
                     {submitted
                         ? "진행자가 다음 질문으로 넘어가면 자동으로 이동합니다"
-                        : "답변을 제출하면 수정할 수 있습니다"}
+                        : "팀원 이름을 선택한 후 제출해주세요"}
                 </p>
             </div>
         </div>
