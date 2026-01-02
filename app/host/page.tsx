@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { ChevronLeft, ChevronRight, Eye, EyeOff } from "lucide-react";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import type { Question, Answer } from "@/types/game";
 import { ThemeToggle } from "@/components/theme-toggle";
 
@@ -48,12 +48,26 @@ export default function HostPage() {
         }
     }, [currentIndex, loading, questions.length]);
 
+    const handleNext = useCallback(() => {
+        if (currentIndex < questions.length - 1) {
+            setCurrentIndex((prev) => prev + 1);
+            setShowAnswer(false);
+        }
+    }, [currentIndex, questions.length]);
+
+    const handlePrevious = useCallback(() => {
+        if (currentIndex > 0) {
+            setCurrentIndex((prev) => prev - 1);
+            setShowAnswer(false);
+        }
+    }, [currentIndex]);
+
     // Keyboard shortcuts
     useEffect(() => {
         function handleKeyDown(e: KeyboardEvent) {
-            if (e.key === "ArrowRight" && currentIndex < questions.length - 1) {
+            if (e.key === "ArrowRight") {
                 handleNext();
-            } else if (e.key === "ArrowLeft" && currentIndex > 0) {
+            } else if (e.key === "ArrowLeft") {
                 handlePrevious();
             } else if (e.key === " ") {
                 e.preventDefault();
@@ -63,21 +77,7 @@ export default function HostPage() {
 
         window.addEventListener("keydown", handleKeyDown);
         return () => window.removeEventListener("keydown", handleKeyDown);
-    }, [currentIndex, questions.length]);
-
-    const handleNext = () => {
-        if (currentIndex < questions.length - 1) {
-            setCurrentIndex((prev) => prev + 1);
-            setShowAnswer(false);
-        }
-    };
-
-    const handlePrevious = () => {
-        if (currentIndex > 0) {
-            setCurrentIndex((prev) => prev - 1);
-            setShowAnswer(false);
-        }
-    };
+    }, [handleNext, handlePrevious]);
 
     const calculateVoteCounts = (answers: Answer[]) => {
         const counts = new Map<string, number>();
@@ -182,7 +182,7 @@ export default function HostPage() {
                         <h2 className="text-3xl font-bold text-foreground">투표 결과</h2>
                         <div className="grid gap-4">
                             {voteCounts.map((item, index) => {
-                                const answer = currentQuestion.answers.find(
+                                const allAnswers = currentQuestion.answers.filter(
                                     (a) => a.name === item.name
                                 );
                                 const isFirst = index === 0;
@@ -210,9 +210,16 @@ export default function HostPage() {
                                                             {item.name}
                                                         </span>
                                                     </div>
-                                                    <p className="text-lg text-muted-foreground leading-relaxed">
-                                                        {answer?.reason}
-                                                    </p>
+                                                    <div className="space-y-2">
+                                                        {allAnswers.map((answer, idx) => (
+                                                            <p 
+                                                                key={idx} 
+                                                                className="text-lg text-muted-foreground leading-relaxed pl-4 border-l-2 border-muted"
+                                                            >
+                                                                {answer.reason}
+                                                            </p>
+                                                        ))}
+                                                    </div>
                                                 </div>
                                                 <div className="text-center min-w-[120px]">
                                                     <div
