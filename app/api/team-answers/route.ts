@@ -4,7 +4,8 @@ import { kvStore } from '@/lib/kv';
 interface TeamAnswerData {
     teamId: string;
     questionId: number;
-    answer: string;
+    firstPlace: string;  // 1등 예측
+    secondPlace: string; // 2등 예측
     timestamp: number;
 }
 
@@ -20,9 +21,9 @@ export async function GET() {
 export async function POST(request: NextRequest) {
     try {
         const body = await request.json();
-        const { teamId, questionId, answer } = body;
+        const { teamId, questionId, firstPlace, secondPlace } = body;
 
-        if (!teamId || questionId === undefined || !answer) {
+        if (!teamId || questionId === undefined || !firstPlace || !secondPlace) {
             return NextResponse.json(
                 { error: 'Missing required fields' },
                 { status: 400 }
@@ -43,7 +44,8 @@ export async function POST(request: NextRequest) {
         answers.push({
             teamId,
             questionId,
-            answer,
+            firstPlace,
+            secondPlace,
             timestamp: Date.now(),
         });
 

@@ -25,7 +25,8 @@ export default function TeamPage() {
 
     const [questions, setQuestions] = useState<Question[]>([]);
     const [gameState, setGameState] = useState<GameState | null>(null);
-    const [answer, setAnswer] = useState("");
+    const [firstPlace, setFirstPlace] = useState("");  // 1등 예측
+    const [secondPlace, setSecondPlace] = useState(""); // 2등 예측
     const [submitted, setSubmitted] = useState(false);
     const [loading, setLoading] = useState(true);
 
@@ -39,24 +40,28 @@ export default function TeamPage() {
         const saved = localStorage.getItem(storageKey);
         if (saved) {
             try {
-                const answers: TeamAnswer[] = JSON.parse(saved);
+                const answers = JSON.parse(saved);
                 const currentAnswer = answers.find(
-                    (a) => a.questionId === currentQuestion.id
+                    (a: { questionId: number }) => a.questionId === currentQuestion.id
                 );
                 if (currentAnswer) {
-                    setAnswer(currentAnswer.answer);
+                    setFirstPlace(currentAnswer.firstPlace || currentAnswer.answer || "");
+                    setSecondPlace(currentAnswer.secondPlace || "");
                     setSubmitted(true);
                 } else {
-                    setAnswer("");
+                    setFirstPlace("");
+                    setSecondPlace("");
                     setSubmitted(false);
                 }
             } catch (error) {
                 console.error("Failed to load saved answers:", error);
-                setAnswer("");
+                setFirstPlace("");
+                setSecondPlace("");
                 setSubmitted(false);
             }
         } else {
-            setAnswer("");
+            setFirstPlace("");
+            setSecondPlace("");
             setSubmitted(false);
         }
     }, [gameState?.currentQuestionIndex, currentQuestion?.id, storageKey]);
@@ -96,10 +101,10 @@ export default function TeamPage() {
     }, []);
 
     const handleSubmit = async () => {
-        if (!answer.trim() || !currentQuestion) return;
+        if (!firstPlace.trim() || !secondPlace.trim() || !currentQuestion) return;
 
         const saved = localStorage.getItem(storageKey);
-        let answers: TeamAnswer[] = [];
+        let answers: { questionId: number; firstPlace: string; secondPlace: string }[] = [];
 
         if (saved) {
             try {
@@ -115,7 +120,8 @@ export default function TeamPage() {
         // Add new answer
         answers.push({
             questionId: currentQuestion.id,
-            answer: answer.trim(),
+            firstPlace: firstPlace.trim(),
+            secondPlace: secondPlace.trim(),
         });
 
         localStorage.setItem(storageKey, JSON.stringify(answers));
@@ -128,7 +134,8 @@ export default function TeamPage() {
                 body: JSON.stringify({
                     teamId,
                     questionId: currentQuestion.id,
-                    answer: answer.trim(),
+                    firstPlace: firstPlace.trim(),
+                    secondPlace: secondPlace.trim(),
                 }),
             });
         } catch (error) {
@@ -195,8 +202,15 @@ export default function TeamPage() {
                                     <CheckCircle2 className="w-6 h-6" />
                                     <span className="text-lg font-semibold">답변이 제출되었습니다</span>
                                 </div>
-                                <div className="p-4 bg-muted/50 rounded-lg border border-border">
-                                    <p className="text-xl font-medium text-foreground">{answer}</p>
+                                <div className="space-y-2">
+                                    <div className="p-4 bg-orange-500/10 rounded-lg border border-orange-500/30">
+                                        <p className="text-sm text-orange-500 font-semibold mb-1">🥇 1등 예측</p>
+                                        <p className="text-xl font-medium text-foreground">{firstPlace}</p>
+                                    </div>
+                                    <div className="p-4 bg-blue-500/10 rounded-lg border border-blue-500/30">
+                                        <p className="text-sm text-blue-500 font-semibold mb-1">🥈 2등 예측</p>
+                                        <p className="text-xl font-medium text-foreground">{secondPlace}</p>
+                                    </div>
                                 </div>
                                 <Button
                                     onClick={handleEdit}
@@ -208,21 +222,25 @@ export default function TeamPage() {
                                 </Button>
                             </div>
                         ) : (
-                            <div className="space-y-4">
+                            <div className="space-y-6">
+                                {/* 1등 선택 */}
                                 <div>
-                                    <label className="text-sm font-medium text-muted-foreground mb-3 block">
-                                        팀원을 선택하세요
+                                    <label className="text-sm font-medium text-orange-500 mb-3 block">
+                                        🥇 1등 예측 선택
                                     </label>
                                     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
                                         {TEAM_MEMBERS.map((name) => (
                                             <Button
                                                 key={name}
-                                                onClick={() => setAnswer(name)}
-                                                variant={answer === name ? "default" : "outline"}
+                                                onClick={() => setFirstPlace(name)}
+                                                variant={firstPlace === name ? "default" : "outline"}
                                                 size="sm"
+                                                disabled={secondPlace === name}
                                                 className={`touch-manipulation text-sm py-3 h-auto ${
-                                                    answer === name 
+                                                    firstPlace === name 
                                                         ? "bg-orange-500 hover:bg-orange-600 text-white border-orange-500" 
+                                                        : secondPlace === name
+                                                        ? "opacity-30"
                                                         : "hover:border-orange-500 hover:text-orange-500"
                                                 }`}
                                             >
@@ -231,13 +249,43 @@ export default function TeamPage() {
                                         ))}
                                     </div>
                                 </div>
+
+                                {/* 2등 선택 */}
+                                <div>
+                                    <label className="text-sm font-medium text-blue-500 mb-3 block">
+                                        🥈 2등 예측 선택
+                                    </label>
+                                    <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
+                                        {TEAM_MEMBERS.map((name) => (
+                                            <Button
+                                                key={name}
+                                                onClick={() => setSecondPlace(name)}
+                                                variant={secondPlace === name ? "default" : "outline"}
+                                                size="sm"
+                                                disabled={firstPlace === name}
+                                                className={`touch-manipulation text-sm py-3 h-auto ${
+                                                    secondPlace === name 
+                                                        ? "bg-blue-500 hover:bg-blue-600 text-white border-blue-500" 
+                                                        : firstPlace === name
+                                                        ? "opacity-30"
+                                                        : "hover:border-blue-500 hover:text-blue-500"
+                                                }`}
+                                            >
+                                                {name}
+                                            </Button>
+                                        ))}
+                                    </div>
+                                </div>
+
                                 <Button
                                     onClick={handleSubmit}
-                                    disabled={!answer.trim()}
+                                    disabled={!firstPlace.trim() || !secondPlace.trim()}
                                     size="lg"
-                                    className="w-full bg-orange-500 hover:bg-orange-600 text-white touch-manipulation h-14 text-lg font-semibold disabled:opacity-50"
+                                    className="w-full bg-gradient-to-r from-orange-500 to-blue-500 hover:from-orange-600 hover:to-blue-600 text-white touch-manipulation h-14 text-lg font-semibold disabled:opacity-50"
                                 >
-                                    {answer ? `"${answer}" 제출하기` : "팀원을 선택해주세요"}
+                                    {firstPlace && secondPlace 
+                                        ? `🥇 ${firstPlace} / 🥈 ${secondPlace} 제출하기` 
+                                        : "1등과 2등을 모두 선택해주세요"}
                                 </Button>
                             </div>
                         )}

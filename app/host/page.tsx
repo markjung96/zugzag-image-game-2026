@@ -10,14 +10,23 @@ import { ThemeToggle } from "@/components/theme-toggle";
 interface TeamAnswerData {
     teamId: string;
     questionId: number;
-    answer: string;
+    firstPlace: string;
+    secondPlace: string;
     timestamp: number;
 }
 
 interface TeamResult {
     teamId: string;
-    correctCount: number;
-    answers: { questionId: number; answer: string; isCorrect: boolean }[];
+    firstPlaceCorrect: number;  // 1등 맞춘 횟수
+    secondPlaceCorrect: number; // 2등 맞춘 횟수
+    totalScore: number;         // 총점 (1등: 2점, 2등: 1점)
+    answers: { 
+        questionId: number; 
+        firstPlace: string; 
+        secondPlace: string;
+        firstCorrect: boolean;
+        secondCorrect: boolean;
+    }[];
 }
 
 export default function HostPage() {
@@ -112,30 +121,48 @@ export default function HostPage() {
             // 각 팀의 정답 수 계산
             const results: TeamResult[] = [];
             teamMap.forEach((answers, teamId) => {
-                let correctCount = 0;
-                const answerResults: { questionId: number; answer: string; isCorrect: boolean }[] = [];
+                let firstPlaceCorrect = 0;
+                let secondPlaceCorrect = 0;
+                const answerResults: TeamResult["answers"] = [];
 
                 answers.forEach((ta) => {
                     const question = questions.find((q) => q.id === ta.questionId);
                     if (question) {
-                        // 1등 후보 찾기
+                        // 실제 1등, 2등 후보 찾기
                         const voteCounts = calculateVoteCounts(question.answers);
-                        const firstPlace = voteCounts.filter((v) => v.rank === 1).map((v) => v.name);
-                        const isCorrect = firstPlace.includes(ta.answer);
-                        if (isCorrect) correctCount++;
+                        const actualFirst = voteCounts.filter((v) => v.rank === 1).map((v) => v.name);
+                        const actualSecond = voteCounts.filter((v) => v.rank === 2).map((v) => v.name);
+
+                        const firstCorrect = actualFirst.includes(ta.firstPlace);
+                        const secondCorrect = actualSecond.includes(ta.secondPlace);
+
+                        if (firstCorrect) firstPlaceCorrect++;
+                        if (secondCorrect) secondPlaceCorrect++;
+
                         answerResults.push({
                             questionId: ta.questionId,
-                            answer: ta.answer,
-                            isCorrect,
+                            firstPlace: ta.firstPlace,
+                            secondPlace: ta.secondPlace,
+                            firstCorrect,
+                            secondCorrect,
                         });
                     }
                 });
 
-                results.push({ teamId, correctCount, answers: answerResults });
+                // 총점: 1등 맞추면 2점, 2등 맞추면 1점
+                const totalScore = firstPlaceCorrect * 2 + secondPlaceCorrect * 1;
+
+                results.push({ 
+                    teamId, 
+                    firstPlaceCorrect, 
+                    secondPlaceCorrect,
+                    totalScore,
+                    answers: answerResults 
+                });
             });
 
-            // 정답 수로 정렬
-            results.sort((a, b) => b.correctCount - a.correctCount);
+            // 총점으로 정렬
+            results.sort((a, b) => b.totalScore - a.totalScore);
             setTeamResults(results);
             setShowResults(true);
         } catch (error) {
@@ -146,7 +173,7 @@ export default function HostPage() {
     // 게임 초기화
     const handleResetGame = async () => {
         if (!confirm("모든 팀 답변을 초기화하시겠습니까?")) return;
-        
+
         try {
             await fetch("/api/team-answers", { method: "DELETE" });
             await fetch("/api/game-state", { method: "DELETE" });
@@ -247,7 +274,13 @@ export default function HostPage() {
                                                             : "text-foreground"
                                                     }`}
                                                 >
-                                                    {index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : `#${index + 1}`}
+                                                    {index === 0
+                                                        ? "🥇"
+                                                        : index === 1
+                                                        ? "🥈"
+                                                        : index === 2
+                                                        ? "🥉"
+                                                        : `#${index + 1}`}
                                                 </span>
                                                 <span className="text-3xl font-bold">팀 {result.teamId}</span>
                                             </div>
@@ -257,10 +290,11 @@ export default function HostPage() {
                                                         isWinner ? "text-yellow-500" : "text-foreground"
                                                     }`}
                                                 >
-                                                    {result.correctCount}
+                                                    {result.totalScore}점
                                                 </div>
-                                                <div className="text-sm text-muted-foreground">
-                                                    / {questions.length} 정답
+                                                <div className="text-sm text-muted-foreground flex gap-3 justify-end mt-1">
+                                                    <span className="text-orange-500">🥇 {result.firstPlaceCorrect}개</span>
+                                                    <span className="text-blue-500">🥈 {result.secondPlaceCorrect}개</span>
                                                 </div>
                                             </div>
                                         </div>
@@ -268,24 +302,35 @@ export default function HostPage() {
                                         {/* 각 질문별 답변 */}
                                         <div className="mt-4 grid grid-cols-5 gap-2">
                                             {questions.map((q, qIdx) => {
-                                                const teamAnswer = result.answers.find(
-                                                    (a) => a.questionId === q.id
-                                                );
+                                                const teamAnswer = result.answers.find((a) => a.questionId === q.id);
+                                                const bothCorrect = teamAnswer?.firstCorrect && teamAnswer?.secondCorrect;
+                                                const anyCorrect = teamAnswer?.firstCorrect || teamAnswer?.secondCorrect;
                                                 return (
                                                     <div
                                                         key={q.id}
                                                         className={`p-2 rounded text-center text-xs ${
-                                                            teamAnswer?.isCorrect
-                                                                ? "bg-green-500/20 text-green-500"
+                                                            bothCorrect
+                                                                ? "bg-green-500/20 border border-green-500/50"
+                                                                : anyCorrect
+                                                                ? "bg-yellow-500/20 border border-yellow-500/50"
                                                                 : teamAnswer
-                                                                ? "bg-red-500/20 text-red-500"
+                                                                ? "bg-red-500/20 border border-red-500/50"
                                                                 : "bg-muted/30 text-muted-foreground"
                                                         }`}
                                                     >
-                                                        <div className="font-bold">Q{qIdx + 1}</div>
-                                                        <div className="truncate">
-                                                            {teamAnswer?.answer || "-"}
-                                                        </div>
+                                                        <div className="font-bold text-foreground">Q{qIdx + 1}</div>
+                                                        {teamAnswer ? (
+                                                            <div className="space-y-0.5">
+                                                                <div className={`truncate ${teamAnswer.firstCorrect ? "text-green-500" : "text-red-500"}`}>
+                                                                    🥇 {teamAnswer.firstPlace}
+                                                                </div>
+                                                                <div className={`truncate ${teamAnswer.secondCorrect ? "text-green-500" : "text-red-500"}`}>
+                                                                    🥈 {teamAnswer.secondPlace}
+                                                                </div>
+                                                            </div>
+                                                        ) : (
+                                                            <div className="text-muted-foreground">-</div>
+                                                        )}
                                                     </div>
                                                 );
                                             })}
