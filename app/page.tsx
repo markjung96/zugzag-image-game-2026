@@ -11,7 +11,7 @@ import {
     DialogTitle,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Gamepad2, Users, Lock } from "lucide-react";
+import { Gamepad2, Users, Lock, HelpCircle, Award, Trophy, UserCheck } from "lucide-react";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -122,10 +122,58 @@ export default function Home() {
                     </Card>
                 </div>
 
-                {/* Footer text */}
-                <p className="text-center text-sm text-muted-foreground mt-8">
-                    팀을 선택하여 게임에 참여하거나 진행자 모드로 게임을 관리하세요
-                </p>
+                {/* 이용설명 */}
+                <Card className="mt-8 border border-border bg-card/30 backdrop-blur-sm">
+                    <CardContent className="p-6">
+                        <div className="flex items-center gap-2 mb-4">
+                            <HelpCircle className="w-5 h-5 text-orange-500" />
+                            <h3 className="text-lg font-bold">게임 방법</h3>
+                        </div>
+                        <div className="grid md:grid-cols-2 gap-6 text-sm">
+                            <div className="space-y-3">
+                                <div className="flex items-start gap-3">
+                                    <UserCheck className="w-5 h-5 text-muted-foreground mt-0.5 shrink-0" />
+                                    <div>
+                                        <p className="font-semibold text-foreground">팀 선택</p>
+                                        <p className="text-muted-foreground">
+                                            팀 1~4 중 하나를 선택하세요. 팀당 한 명만 접속 가능합니다.
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-3">
+                                    <Award className="w-5 h-5 text-orange-500 mt-0.5 shrink-0" />
+                                    <div>
+                                        <p className="font-semibold text-foreground">1등 & 2등 예측</p>
+                                        <p className="text-muted-foreground">
+                                            각 질문마다 1등과 2등을 맞춰보세요.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="space-y-3">
+                                <div className="flex items-start gap-3">
+                                    <Trophy className="w-5 h-5 text-yellow-500 mt-0.5 shrink-0" />
+                                    <div>
+                                        <p className="font-semibold text-foreground">점수 계산</p>
+                                        <p className="text-muted-foreground">
+                                            1등 맞추면 <span className="text-orange-500 font-bold">2점</span>, 
+                                            2등 맞추면 <span className="text-blue-500 font-bold">1점</span>
+                                        </p>
+                                    </div>
+                                </div>
+                                <div className="flex items-start gap-3">
+                                    <Gamepad2 className="w-5 h-5 text-muted-foreground mt-0.5 shrink-0" />
+                                    <div>
+                                        <p className="font-semibold text-foreground">진행자</p>
+                                        <p className="text-muted-foreground">
+                                            질문 진행 및 결과 공개를 담당합니다.
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </CardContent>
+                </Card>
             </div>
 
             {/* Password Dialog */}
