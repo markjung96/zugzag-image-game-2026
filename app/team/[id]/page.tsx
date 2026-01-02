@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { CheckCircle2, Loader2 } from "lucide-react";
+import { CheckCircle2, Loader2, Award } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import type { Question, GameState, TeamAnswer } from "@/types/game";
@@ -204,11 +204,15 @@ export default function TeamPage() {
                                 </div>
                                 <div className="space-y-2">
                                     <div className="p-4 bg-orange-500/10 rounded-lg border border-orange-500/30">
-                                        <p className="text-sm text-orange-500 font-semibold mb-1">🥇 1등 예측</p>
+                                        <p className="text-sm text-orange-500 font-semibold mb-1 flex items-center gap-1">
+                                            <Award className="w-4 h-4" /> 1등 예측
+                                        </p>
                                         <p className="text-xl font-medium text-foreground">{firstPlace}</p>
                                     </div>
                                     <div className="p-4 bg-blue-500/10 rounded-lg border border-blue-500/30">
-                                        <p className="text-sm text-blue-500 font-semibold mb-1">🥈 2등 예측</p>
+                                        <p className="text-sm text-blue-500 font-semibold mb-1 flex items-center gap-1">
+                                            <Award className="w-4 h-4" /> 2등 예측
+                                        </p>
                                         <p className="text-xl font-medium text-foreground">{secondPlace}</p>
                                     </div>
                                 </div>
@@ -225,8 +229,8 @@ export default function TeamPage() {
                             <div className="space-y-6">
                                 {/* 1등 선택 */}
                                 <div>
-                                    <label className="text-sm font-medium text-orange-500 mb-3 block">
-                                        🥇 1등 예측 선택
+                                    <label className="text-sm font-medium text-orange-500 mb-3 flex items-center gap-1">
+                                        <Award className="w-4 h-4" /> 1등 예측 선택
                                     </label>
                                     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
                                         {TEAM_MEMBERS.map((name) => (
@@ -252,8 +256,8 @@ export default function TeamPage() {
 
                                 {/* 2등 선택 */}
                                 <div>
-                                    <label className="text-sm font-medium text-blue-500 mb-3 block">
-                                        🥈 2등 예측 선택
+                                    <label className="text-sm font-medium text-blue-500 mb-3 flex items-center gap-1">
+                                        <Award className="w-4 h-4" /> 2등 예측 선택
                                     </label>
                                     <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-5 gap-2">
                                         {TEAM_MEMBERS.map((name) => (
@@ -284,7 +288,7 @@ export default function TeamPage() {
                                     className="w-full bg-gradient-to-r from-orange-500 to-blue-500 hover:from-orange-600 hover:to-blue-600 text-white touch-manipulation h-14 text-lg font-semibold disabled:opacity-50"
                                 >
                                     {firstPlace && secondPlace 
-                                        ? `🥇 ${firstPlace} / 🥈 ${secondPlace} 제출하기` 
+                                        ? `1등: ${firstPlace} / 2등: ${secondPlace} 제출하기` 
                                         : "1등과 2등을 모두 선택해주세요"}
                                 </Button>
                             </div>

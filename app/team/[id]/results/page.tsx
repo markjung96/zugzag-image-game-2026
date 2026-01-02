@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { CheckCircle2, XCircle, Lock, Home } from "lucide-react";
+import { CheckCircle2, XCircle, Lock, Home, Sparkles, ThumbsUp, Flame, Trophy } from "lucide-react";
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import type { Question, TeamAnswer } from "@/types/game";
@@ -189,11 +189,11 @@ export default function TeamResultsPage() {
                         <div className="text-2xl font-bold text-foreground">
                             {correctCount} / {totalCount} 정답
                         </div>
-                        <p className="text-lg text-muted-foreground">
-                            {scorePercentage >= 80 && "훌륭합니다! 🎉"}
-                            {scorePercentage >= 60 && scorePercentage < 80 && "잘했습니다! 👏"}
-                            {scorePercentage >= 40 && scorePercentage < 60 && "괜찮아요! 💪"}
-                            {scorePercentage < 40 && "다음엔 더 잘할 수 있어요! 🔥"}
+                        <p className="text-lg text-muted-foreground flex items-center justify-center gap-2">
+                            {scorePercentage >= 80 && <><Sparkles className="w-5 h-5 text-yellow-500" /> 훌륭합니다!</>}
+                            {scorePercentage >= 60 && scorePercentage < 80 && <><ThumbsUp className="w-5 h-5 text-green-500" /> 잘했습니다!</>}
+                            {scorePercentage >= 40 && scorePercentage < 60 && <><Trophy className="w-5 h-5 text-blue-500" /> 괜찮아요!</>}
+                            {scorePercentage < 40 && <><Flame className="w-5 h-5 text-orange-500" /> 다음엔 더 잘할 수 있어요!</>}
                         </p>
                     </CardContent>
                 </Card>

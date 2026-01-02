@@ -2,7 +2,7 @@
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
-import { ChevronLeft, ChevronRight, Eye, EyeOff, Trophy, RotateCcw } from "lucide-react";
+import { ChevronLeft, ChevronRight, Eye, EyeOff, Trophy, RotateCcw, Medal, Award, Sparkles } from "lucide-react";
 import { useState, useEffect, useCallback } from "react";
 import type { Question, Answer } from "@/types/game";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -17,12 +17,12 @@ interface TeamAnswerData {
 
 interface TeamResult {
     teamId: string;
-    firstPlaceCorrect: number;  // 1등 맞춘 횟수
+    firstPlaceCorrect: number; // 1등 맞춘 횟수
     secondPlaceCorrect: number; // 2등 맞춘 횟수
-    totalScore: number;         // 총점 (1등: 2점, 2등: 1점)
-    answers: { 
-        questionId: number; 
-        firstPlace: string; 
+    totalScore: number; // 총점 (1등: 2점, 2등: 1점)
+    answers: {
+        questionId: number;
+        firstPlace: string;
         secondPlace: string;
         firstCorrect: boolean;
         secondCorrect: boolean;
@@ -152,12 +152,12 @@ export default function HostPage() {
                 // 총점: 1등 맞추면 2점, 2등 맞추면 1점
                 const totalScore = firstPlaceCorrect * 2 + secondPlaceCorrect * 1;
 
-                results.push({ 
-                    teamId, 
-                    firstPlaceCorrect, 
+                results.push({
+                    teamId,
+                    firstPlaceCorrect,
                     secondPlaceCorrect,
                     totalScore,
-                    answers: answerResults 
+                    answers: answerResults,
                 });
             });
 
@@ -243,8 +243,12 @@ export default function HostPage() {
                 <div className="max-w-4xl mx-auto">
                     <div className="text-center mb-12">
                         <Trophy className="w-20 h-20 text-yellow-500 mx-auto mb-4" />
-                        <h1 className="text-5xl font-black mb-2">🎉 최종 결과 🎉</h1>
-                        <p className="text-xl text-muted-foreground">팀별 정답 수</p>
+                        <div className="flex items-center justify-center gap-3 mb-2">
+                            <Sparkles className="w-8 h-8 text-yellow-500" />
+                            <h1 className="text-5xl font-black">최종 결과</h1>
+                            <Sparkles className="w-8 h-8 text-yellow-500" />
+                        </div>
+                        <p className="text-xl text-muted-foreground">팀별 점수</p>
                     </div>
 
                     <div className="space-y-4 mb-8">
@@ -265,23 +269,17 @@ export default function HostPage() {
                                     <CardContent className="p-6">
                                         <div className="flex items-center justify-between">
                                             <div className="flex items-center gap-4">
-                                                <span
-                                                    className={`text-4xl font-black ${
-                                                        isWinner
-                                                            ? "text-yellow-500"
-                                                            : isSecond
-                                                            ? "text-gray-400"
-                                                            : "text-foreground"
-                                                    }`}
-                                                >
-                                                    {index === 0
-                                                        ? "🥇"
-                                                        : index === 1
-                                                        ? "🥈"
-                                                        : index === 2
-                                                        ? "🥉"
-                                                        : `#${index + 1}`}
-                                                </span>
+                                                {index === 0 ? (
+                                                    <Medal className="w-10 h-10 text-yellow-500" />
+                                                ) : index === 1 ? (
+                                                    <Medal className="w-10 h-10 text-gray-400" />
+                                                ) : index === 2 ? (
+                                                    <Medal className="w-10 h-10 text-amber-600" />
+                                                ) : (
+                                                    <span className="w-10 h-10 flex items-center justify-center text-2xl font-black text-foreground">
+                                                        #{index + 1}
+                                                    </span>
+                                                )}
                                                 <span className="text-3xl font-bold">팀 {result.teamId}</span>
                                             </div>
                                             <div className="text-right">
@@ -292,9 +290,13 @@ export default function HostPage() {
                                                 >
                                                     {result.totalScore}점
                                                 </div>
-                                                <div className="text-sm text-muted-foreground flex gap-3 justify-end mt-1">
-                                                    <span className="text-orange-500">🥇 {result.firstPlaceCorrect}개</span>
-                                                    <span className="text-blue-500">🥈 {result.secondPlaceCorrect}개</span>
+                                                <div className="text-sm flex gap-3 justify-end mt-1">
+                                                    <span className="text-orange-500 flex items-center gap-1">
+                                                        <Award className="w-4 h-4" /> {result.firstPlaceCorrect}개
+                                                    </span>
+                                                    <span className="text-blue-500 flex items-center gap-1">
+                                                        <Award className="w-4 h-4" /> {result.secondPlaceCorrect}개
+                                                    </span>
                                                 </div>
                                             </div>
                                         </div>
@@ -303,8 +305,10 @@ export default function HostPage() {
                                         <div className="mt-4 grid grid-cols-5 gap-2">
                                             {questions.map((q, qIdx) => {
                                                 const teamAnswer = result.answers.find((a) => a.questionId === q.id);
-                                                const bothCorrect = teamAnswer?.firstCorrect && teamAnswer?.secondCorrect;
-                                                const anyCorrect = teamAnswer?.firstCorrect || teamAnswer?.secondCorrect;
+                                                const bothCorrect =
+                                                    teamAnswer?.firstCorrect && teamAnswer?.secondCorrect;
+                                                const anyCorrect =
+                                                    teamAnswer?.firstCorrect || teamAnswer?.secondCorrect;
                                                 return (
                                                     <div
                                                         key={q.id}
@@ -321,11 +325,23 @@ export default function HostPage() {
                                                         <div className="font-bold text-foreground">Q{qIdx + 1}</div>
                                                         {teamAnswer ? (
                                                             <div className="space-y-0.5">
-                                                                <div className={`truncate ${teamAnswer.firstCorrect ? "text-green-500" : "text-red-500"}`}>
-                                                                    🥇 {teamAnswer.firstPlace}
+                                                                <div
+                                                                    className={`truncate flex items-center gap-0.5 ${
+                                                                        teamAnswer.firstCorrect
+                                                                            ? "text-green-500"
+                                                                            : "text-red-500"
+                                                                    }`}
+                                                                >
+                                                                    <span className="text-orange-500">1</span> {teamAnswer.firstPlace}
                                                                 </div>
-                                                                <div className={`truncate ${teamAnswer.secondCorrect ? "text-green-500" : "text-red-500"}`}>
-                                                                    🥈 {teamAnswer.secondPlace}
+                                                                <div
+                                                                    className={`truncate flex items-center gap-0.5 ${
+                                                                        teamAnswer.secondCorrect
+                                                                            ? "text-green-500"
+                                                                            : "text-red-500"
+                                                                    }`}
+                                                                >
+                                                                    <span className="text-blue-500">2</span> {teamAnswer.secondPlace}
                                                                 </div>
                                                             </div>
                                                         ) : (
