@@ -1,31 +1,58 @@
-import { kv } from '@vercel/kv';
+// 메모리 저장소 (KV가 설정되지 않은 경우 fallback)
+const memoryStore = new Map<string, string>();
 
-// 개발 환경에서는 메모리 저장소 사용
-const memoryStore = new Map<string, any>();
+// Vercel KV 환경변수가 있는지 확인
+const hasKV = !!(process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN);
 
-const isProduction = process.env.VERCEL_ENV === 'production';
+// 동적으로 kv import (환경변수가 있을 때만)
+let kv: any = null;
+if (hasKV) {
+    try {
+        kv = require('@vercel/kv').kv;
+    } catch (e) {
+        console.warn('Vercel KV not available, using memory store');
+    }
+}
 
 export const kvStore = {
     async get<T>(key: string): Promise<T | null> {
-        if (isProduction) {
-            return await kv.get<T>(key);
+        if (hasKV && kv) {
+            try {
+                return await kv.get<T>(key);
+            } catch (error) {
+                console.error('KV get error:', error);
+                // fallback to memory
+                const stored = memoryStore.get(key);
+                return stored ? JSON.parse(stored) : null;
+            }
         }
-        return memoryStore.get(key) || null;
+        const stored = memoryStore.get(key);
+        return stored ? JSON.parse(stored) : null;
     },
 
     async set(key: string, value: any): Promise<void> {
-        if (isProduction) {
-            await kv.set(key, value);
-        } else {
-            memoryStore.set(key, value);
+        if (hasKV && kv) {
+            try {
+                await kv.set(key, value);
+                return;
+            } catch (error) {
+                console.error('KV set error:', error);
+                // fallback to memory
+            }
         }
+        memoryStore.set(key, JSON.stringify(value));
     },
 
     async del(key: string): Promise<void> {
-        if (isProduction) {
-            await kv.del(key);
-        } else {
-            memoryStore.delete(key);
+        if (hasKV && kv) {
+            try {
+                await kv.del(key);
+                return;
+            } catch (error) {
+                console.error('KV del error:', error);
+                // fallback to memory
+            }
         }
+        memoryStore.delete(key);
     },
 };
