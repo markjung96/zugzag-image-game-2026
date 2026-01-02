@@ -87,20 +87,20 @@ export default function HostPage() {
         const sorted = Array.from(counts.entries())
             .map(([name, count]) => ({ name, count }))
             .sort((a, b) => b.count - a.count);
-        
+
         // 공동 순위 계산
         let currentRank = 1;
         let prevCount = -1;
-        
+
         return sorted.map((item, index) => {
             if (item.count !== prevCount) {
                 currentRank = index + 1;
             }
             prevCount = item.count;
-            
+
             // 같은 순위가 2명 이상인지 확인
-            const isTied = sorted.filter(s => s.count === item.count).length > 1;
-            
+            const isTied = sorted.filter((s) => s.count === item.count).length > 1;
+
             return { ...item, rank: currentRank, isTied };
         });
     };
@@ -199,23 +199,23 @@ export default function HostPage() {
                                 const allAnswers = currentQuestion.answers.filter((a) => a.name === item.name);
                                 const isFirst = item.rank === 1;
                                 const isSecond = item.rank === 2;
-                                
+
                                 // 스타일 결정
-                                const cardStyle = isFirst 
-                                    ? "border-orange-500 bg-orange-500/10" 
-                                    : isSecond 
-                                        ? "border-blue-500 bg-blue-500/10"
-                                        : "border-border bg-card/50";
-                                
-                                const textStyle = isFirst 
-                                    ? "text-orange-500" 
-                                    : isSecond 
-                                        ? "text-blue-500"
-                                        : "text-foreground";
-                                
+                                const cardStyle = isFirst
+                                    ? "border-orange-500 bg-orange-500/10"
+                                    : isSecond
+                                    ? "border-blue-500 bg-blue-500/10"
+                                    : "border-border bg-card/50";
+
+                                const textStyle = isFirst
+                                    ? "text-orange-500"
+                                    : isSecond
+                                    ? "text-blue-500"
+                                    : "text-foreground";
+
                                 // 순위 텍스트 (공동인 경우 "공동" 추가)
                                 const rankText = item.isTied ? `공동 ${item.rank}등` : `#${item.rank}`;
-                                
+
                                 return (
                                     <Card
                                         key={item.name}
@@ -232,14 +232,31 @@ export default function HostPage() {
                                                             {item.name}
                                                         </span>
                                                     </div>
-                                                    <div className="space-y-2">
+                                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-4">
                                                         {allAnswers.map((answer, idx) => (
-                                                            <p
+                                                            <div
                                                                 key={idx}
-                                                                className="text-lg text-muted-foreground leading-relaxed pl-4 border-l-2 border-muted"
+                                                                className={`flex items-start gap-3 p-3 rounded-lg ${
+                                                                    isFirst 
+                                                                        ? "bg-orange-500/5 border border-orange-500/20" 
+                                                                        : isSecond
+                                                                        ? "bg-blue-500/5 border border-blue-500/20"
+                                                                        : "bg-muted/30 border border-border"
+                                                                }`}
                                                             >
-                                                                {answer.reason}
-                                                            </p>
+                                                                <span className={`shrink-0 w-7 h-7 rounded-full flex items-center justify-center text-sm font-bold ${
+                                                                    isFirst 
+                                                                        ? "bg-orange-500 text-white" 
+                                                                        : isSecond
+                                                                        ? "bg-blue-500 text-white"
+                                                                        : "bg-muted text-muted-foreground"
+                                                                }`}>
+                                                                    {idx + 1}
+                                                                </span>
+                                                                <p className="text-base text-foreground leading-relaxed flex-1">
+                                                                    {answer.reason || <span className="text-muted-foreground italic">사유 없음</span>}
+                                                                </p>
+                                                            </div>
                                                         ))}
                                                     </div>
                                                 </div>
