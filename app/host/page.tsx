@@ -53,7 +53,7 @@ export default function HostPage() {
     const [showResults, setShowResults] = useState(false);
     const [teamResults, setTeamResults] = useState<TeamResult[]>([]);
     const [teamSubmissions, setTeamSubmissions] = useState<Record<string, boolean>>({});
-    
+
     // 타이머 상태
     const [timerSeconds, setTimerSeconds] = useState(30);
     const [timerRunning, setTimerRunning] = useState(false);
@@ -620,12 +620,7 @@ export default function HostPage() {
                         >
                             {timerRunning ? <Pause className="w-4 h-4" /> : <Play className="w-4 h-4" />}
                         </Button>
-                        <Button
-                            onClick={handleTimerReset}
-                            size="sm"
-                            variant="outline"
-                            className="touch-manipulation"
-                        >
+                        <Button onClick={handleTimerReset} size="sm" variant="outline" className="touch-manipulation">
                             <RotateCw className="w-4 h-4" />
                         </Button>
                     </div>
