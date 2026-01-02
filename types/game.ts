@@ -23,4 +23,5 @@ export interface TeamAnswer {
 export interface GameState {
     currentQuestionIndex: number;
     totalQuestions: number;
+    resetTimestamp?: number; // 게임 초기화 시 타임스탬프
 }

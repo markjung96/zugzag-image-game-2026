@@ -10,6 +10,13 @@ import { useParams, useRouter } from "next/navigation";
 import type { Question, TeamAnswer } from "@/types/game";
 import { ThemeToggle } from "@/components/theme-toggle";
 
+interface TeamAnswerData {
+    teamId: string;
+    questionId: number;
+    firstPlace: string;
+    secondPlace: string;
+}
+
 export default function TeamResultsPage() {
     const params = useParams();
     const router = useRouter();
@@ -23,64 +30,79 @@ export default function TeamResultsPage() {
     const [authenticated, setAuthenticated] = useState(false);
     const [loading, setLoading] = useState(true);
 
-    const storageKey = `team-${teamId}-answers`;
-
-    // Load data on mount
+    // Load data on mount - Redis에서 가져옴
     useEffect(() => {
-        async function fetchQuestions() {
+        async function fetchData() {
             try {
-                const response = await fetch("/api/questions");
-                const data = await response.json();
-                setQuestions(data);
+                // 질문 데이터 가져오기
+                const questionsResponse = await fetch("/api/questions");
+                const questionsData = await questionsResponse.json();
+                setQuestions(questionsData);
 
-                // Load team answers from localStorage
-                const saved = localStorage.getItem(storageKey);
-                if (saved) {
-                    const answers: TeamAnswer[] = JSON.parse(saved);
+                // Redis에서 팀 답변 가져오기
+                const answersResponse = await fetch("/api/team-answers");
+                const allAnswers: TeamAnswerData[] = await answersResponse.json();
+                
+                // 현재 팀의 답변만 필터링
+                const myAnswers = allAnswers.filter(a => a.teamId === teamId);
 
-                    // Check if answer is correct
-                    const answersWithCorrectness = answers.map((answer) => {
-                        const question = data.find((q: Question) => q.id === answer.questionId);
-                        if (!question) return answer;
+                // 정답 체크
+                const answersWithCorrectness: TeamAnswer[] = myAnswers.map((answer) => {
+                    const question = questionsData.find((q: Question) => q.id === answer.questionId);
+                    if (!question) return { questionId: answer.questionId, answer: answer.firstPlace };
 
-                        // Calculate vote counts
-                        const counts = new Map<string, number>();
-                        question.answers.forEach((a: { name: string }) => {
-                            counts.set(a.name, (counts.get(a.name) || 0) + 1);
-                        });
-
-                        // Find the most voted answer
-                        let maxCount = 0;
-                        let correctAnswers: string[] = [];
-                        counts.forEach((count, name) => {
-                            if (count > maxCount) {
-                                maxCount = count;
-                                correctAnswers = [name];
-                            } else if (count === maxCount) {
-                                correctAnswers.push(name);
-                            }
-                        });
-
-                        // Check if team's answer matches any correct answer (case-insensitive)
-                        const isCorrect = correctAnswers.some(
-                            (correct) => correct.toLowerCase().trim() === answer.answer.toLowerCase().trim()
-                        );
-
-                        return { ...answer, isCorrect };
+                    // 투표 수 계산
+                    const counts = new Map<string, number>();
+                    question.answers.forEach((a: { name: string }) => {
+                        counts.set(a.name, (counts.get(a.name) || 0) + 1);
                     });
 
-                    setTeamAnswers(answersWithCorrectness);
-                }
+                    // 1등 찾기
+                    const sortedCounts = Array.from(counts.entries()).sort((a, b) => b[1] - a[1]);
+                    const firstPlaceNames: string[] = [];
+                    const secondPlaceNames: string[] = [];
+                    
+                    if (sortedCounts.length > 0) {
+                        const topCount = sortedCounts[0][1];
+                        sortedCounts.forEach(([name, count]) => {
+                            if (count === topCount) firstPlaceNames.push(name);
+                        });
+                        
+                        // 2등 찾기 (1등 제외)
+                        const remainingCounts = sortedCounts.filter(([name]) => !firstPlaceNames.includes(name));
+                        if (remainingCounts.length > 0) {
+                            const secondCount = remainingCounts[0][1];
+                            remainingCounts.forEach(([name, count]) => {
+                                if (count === secondCount) secondPlaceNames.push(name);
+                            });
+                        }
+                    }
 
+                    // 1등/2등 맞췄는지 확인
+                    const isFirstCorrect = firstPlaceNames.includes(answer.firstPlace);
+                    const isSecondCorrect = secondPlaceNames.includes(answer.secondPlace);
+
+                    return { 
+                        questionId: answer.questionId, 
+                        answer: `1등: ${answer.firstPlace}, 2등: ${answer.secondPlace}`,
+                        isCorrect: isFirstCorrect && isSecondCorrect,
+                        firstPlace: answer.firstPlace,
+                        secondPlace: answer.secondPlace,
+                        isFirstCorrect,
+                        isSecondCorrect,
+                    };
+                });
+
+                setTeamAnswers(answersWithCorrectness);
                 setLoading(false);
             } catch (error) {
-                console.error("Failed to fetch questions:", error);
+                console.error("Failed to fetch data:", error);
                 setLoading(false);
             }
         }
 
-        fetchQuestions();
-    }, [storageKey]);
+        fetchData();
+    }, [teamId]);
 
     const handlePasswordSubmit = () => {
         if (password === "1805") {
