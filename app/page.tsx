@@ -160,10 +160,12 @@ export default function Home() {
                                     </div>
                                 </div>
                                 <div className="flex items-start gap-3">
-                                    <Gamepad2 className="w-5 h-5 text-muted-foreground mt-0.5 shrink-0" />
+                                    <Users className="w-5 h-5 text-purple-500 mt-0.5 shrink-0" />
                                     <div>
-                                        <p className="font-semibold text-foreground">진행자</p>
-                                        <p className="text-muted-foreground">질문 진행 및 결과 공개를 담당합니다.</p>
+                                        <p className="font-semibold text-foreground">공동 순위</p>
+                                        <p className="text-muted-foreground">
+                                            공동 1등/2등이 있으면 그 중 <span className="font-bold">아무나 선택해도</span> 정답!
+                                        </p>
                                     </div>
                                 </div>
                             </div>
