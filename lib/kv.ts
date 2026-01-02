@@ -1,17 +1,39 @@
-// 메모리 저장소 (KV가 설정되지 않은 경우 fallback)
-// 주의: Serverless 환경에서는 각 요청마다 초기화될 수 있음
+import { createClient, RedisClientType } from 'redis';
+
+// Redis 클라이언트 싱글톤
+let redisClient: RedisClientType | null = null;
+
+async function getRedisClient(): Promise<RedisClientType | null> {
+    if (!process.env.REDIS_URL) {
+        return null;
+    }
+
+    if (!redisClient) {
+        redisClient = createClient({
+            url: process.env.REDIS_URL,
+        });
+
+        redisClient.on('error', (err) => console.error('Redis Client Error', err));
+
+        await redisClient.connect();
+    }
+
+    return redisClient;
+}
+
+// 메모리 저장소 (Redis가 설정되지 않은 경우 fallback)
 const memoryStore = new Map<string, string>();
 
 export const kvStore = {
     async get<T>(key: string): Promise<T | null> {
-        // KV 환경변수가 있는지 런타임에 확인
-        if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
-            try {
-                const { kv } = await import('@vercel/kv');
-                return await kv.get<T>(key);
-            } catch (error) {
-                console.error('KV get error:', error);
+        try {
+            const client = await getRedisClient();
+            if (client) {
+                const result = await client.get(key);
+                return result ? JSON.parse(result) : null;
             }
+        } catch (error) {
+            console.error('Redis get error:', error);
         }
         // fallback to memory
         const stored = memoryStore.get(key);
@@ -19,28 +41,28 @@ export const kvStore = {
     },
 
     async set(key: string, value: any): Promise<void> {
-        if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
-            try {
-                const { kv } = await import('@vercel/kv');
-                await kv.set(key, value);
+        try {
+            const client = await getRedisClient();
+            if (client) {
+                await client.set(key, JSON.stringify(value));
                 return;
-            } catch (error) {
-                console.error('KV set error:', error);
             }
+        } catch (error) {
+            console.error('Redis set error:', error);
         }
         // fallback to memory
         memoryStore.set(key, JSON.stringify(value));
     },
 
     async del(key: string): Promise<void> {
-        if (process.env.KV_REST_API_URL && process.env.KV_REST_API_TOKEN) {
-            try {
-                const { kv } = await import('@vercel/kv');
-                await kv.del(key);
+        try {
+            const client = await getRedisClient();
+            if (client) {
+                await client.del(key);
                 return;
-            } catch (error) {
-                console.error('KV del error:', error);
             }
+        } catch (error) {
+            console.error('Redis del error:', error);
         }
         // fallback to memory
         memoryStore.delete(key);
